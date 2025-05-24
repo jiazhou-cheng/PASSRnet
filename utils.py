@@ -5,20 +5,20 @@ from torchvision.transforms import ToTensor
 import random
 import torch
 import numpy as np
-from skimage import measure
+from skimage.metrics import peak_signal_noise_ratio
 from torch.nn import init
 
 
 class TrainSetLoader(Dataset):
     def __init__(self, dataset_dir, cfg):
         super(TrainSetLoader, self).__init__()
-        self.dataset_dir = dataset_dir + '/patches_x' + str(cfg.scale_factor)
+        self.dataset_dir = dataset_dir
         self.file_list = os.listdir(self.dataset_dir)
     def __getitem__(self, index):
         img_hr_left  = Image.open(self.dataset_dir + '/' + self.file_list[index] + '/hr0.png')
         img_hr_right = Image.open(self.dataset_dir + '/' + self.file_list[index] + '/hr1.png')
-        img_lr_left  = Image.open(self.dataset_dir + '/' + self.file_list[index] + '/lr0.png')
-        img_lr_right = Image.open(self.dataset_dir + '/' + self.file_list[index] + '/lr1.png')
+        img_lr_left  = Image.open(self.dataset_dir + '/' + self.file_list[index] + '/masked0.png')
+        img_lr_right = Image.open(self.dataset_dir + '/' + self.file_list[index] + '/masked1.png')
 
         img_hr_left  = np.array(img_hr_left,  dtype=np.float32)
         img_hr_right = np.array(img_hr_right, dtype=np.float32)
@@ -79,9 +79,9 @@ class L1Loss(object):
         return torch.abs(input - target).mean()
 
 def cal_psnr(img1, img2):
-    img1_np = np.array(img1)
-    img2_np = np.array(img2)
-    return measure.compare_psnr(img1_np, img2_np)
+    img1_np = img1.cpu().numpy()
+    img2_np = img2.cpu().numpy()
+    return peak_signal_noise_ratio(img1_np, img2_np)
 
 def save_ckpt(state, save_path='./log', filename='checkpoint.pth.tar'):
     torch.save(state, os.path.join(save_path,filename))

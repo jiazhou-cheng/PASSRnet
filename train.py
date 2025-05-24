@@ -4,17 +4,19 @@ from torch.utils.data import DataLoader
 import torch.backends.cudnn as cudnn
 from utils import *
 import argparse
+from tqdm import tqdm
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--scale_factor", type=int, default=4)
+    parser.add_argument("--scale_factor", type=int, default=1) # no upsampling
     parser.add_argument('--device', type=str, default='cuda:0')
     parser.add_argument('--batch_size', type=int, default=32)
     parser.add_argument('--lr', type=float, default=2e-4, help='initial learning rate')
     parser.add_argument('--gamma', type=float, default=0.5, help='')
     parser.add_argument('--n_epochs', type=int, default=80, help='number of epochs to train')
     parser.add_argument('--n_steps', type=int, default=30, help='number of epochs to update learning rate')
-    parser.add_argument('--trainset_dir', type=str, default='data/train/Flickr1024_patches')
+    parser.add_argument('--trainset_dir', type=str, default='data/train/Flickr1024_patches_masked_irregular')
     return parser.parse_args()
 
 
@@ -35,7 +37,7 @@ def train(train_loader, cfg):
 
     for idx_epoch in range(cfg.n_epochs):
         scheduler.step()
-        for idx_iter, (HR_left, _, LR_left, LR_right) in enumerate(train_loader):
+        for idx_iter, (HR_left, _, LR_left, LR_right) in tqdm(enumerate(train_loader), total=len(train_loader), desc=f"Epoch {idx_epoch+1}"):
             b, c, h, w = LR_left.shape
             HR_left, LR_left, LR_right  = Variable(HR_left).to(cfg.device), Variable(LR_left).to(cfg.device), Variable(LR_right).to(cfg.device)
 

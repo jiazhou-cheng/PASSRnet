@@ -154,7 +154,7 @@ class PAM(nn.Module):
 def morphologic_process(mask):
     device = mask.device
     b,_,_,_ = mask.shape
-    mask = 1-mask
+    mask = ~mask
     mask_np = mask.cpu().numpy().astype(bool)
     mask_np = morphology.remove_small_objects(mask_np, 20, 2)
     mask_np = morphology.remove_small_holes(mask_np, 10, 2)
