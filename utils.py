@@ -35,12 +35,24 @@ class TestSetLoader(Dataset):
         super(TestSetLoader, self).__init__()
         self.dataset_dir = dataset_dir
         self.scale_factor = scale_factor
-        self.file_list = os.listdir(dataset_dir + '/hr')
+        # For KITTI
+        # self.file_list = os.listdir(dataset_dir + '/hr')
+
+        self.file_list = os.listdir(dataset_dir)
     def __getitem__(self, index):
-        hr_image_left  = Image.open(self.dataset_dir + '/hr/' + self.file_list[index] + '/hr0.png')
-        hr_image_right = Image.open(self.dataset_dir + '/hr/' + self.file_list[index] + '/hr1.png')
-        lr_image_left  = Image.open(self.dataset_dir + '/lr_x' + str(self.scale_factor) + '/' + self.file_list[index] + '/lr0.png')
-        lr_image_right = Image.open(self.dataset_dir + '/lr_x' + str(self.scale_factor) + '/' + self.file_list[index] + '/lr1.png')
+
+        # # For KITTI
+        # hr_image_left  = Image.open(self.dataset_dir + '/hr/' + self.file_list[index] + '/hr0.png')
+        # hr_image_right = Image.open(self.dataset_dir + '/hr/' + self.file_list[index] + '/hr1.png')
+        # lr_image_left  = Image.open(self.dataset_dir + '/lr_x' + str(self.scale_factor) + '/' + self.file_list[index] + '/masked0.png')
+        # lr_image_right = Image.open(self.dataset_dir + '/lr_x' + str(self.scale_factor) + '/' + self.file_list[index] + '/masked1.png')
+
+        # For Flickr
+        hr_image_left  = Image.open(self.dataset_dir + '/' + self.file_list[index] + '/hr0.png')
+        hr_image_right = Image.open(self.dataset_dir + '/' + self.file_list[index] + '/hr1.png')
+        lr_image_left  = Image.open(self.dataset_dir + '/' + self.file_list[index] + '/masked0.png')
+        lr_image_right = Image.open(self.dataset_dir + '/' + self.file_list[index] + '/masked1.png')
+
         hr_image_left  = ToTensor()(hr_image_left)
         hr_image_right = ToTensor()(hr_image_right)
         lr_image_left  = ToTensor()(lr_image_left)
@@ -84,6 +96,7 @@ def cal_psnr(img1, img2):
     return peak_signal_noise_ratio(img1_np, img2_np)
 
 def save_ckpt(state, save_path='./log', filename='checkpoint.pth.tar'):
+    os.makedirs(save_path, exist_ok=True)
     torch.save(state, os.path.join(save_path,filename))
 
 def weights_init_xavier(m):

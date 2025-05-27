@@ -5,18 +5,19 @@ import torch.backends.cudnn as cudnn
 from utils import *
 import argparse
 from tqdm import tqdm
-
+from torch.utils.tensorboard import SummaryWriter
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--scale_factor", type=int, default=1) # no upsampling
     parser.add_argument('--device', type=str, default='cuda:0')
-    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--batch_size', type=int, default=16)
     parser.add_argument('--lr', type=float, default=2e-4, help='initial learning rate')
     parser.add_argument('--gamma', type=float, default=0.5, help='')
-    parser.add_argument('--n_epochs', type=int, default=80, help='number of epochs to train')
-    parser.add_argument('--n_steps', type=int, default=30, help='number of epochs to update learning rate')
-    parser.add_argument('--trainset_dir', type=str, default='data/train/Flickr1024_patches_masked_irregular')
+    parser.add_argument('--n_epochs', type=int, default=25, help='number of epochs to train')
+    parser.add_argument('--n_steps', type=int, default=10, help='number of epochs to update learning rate')
+    parser.add_argument('--trainset_dir', type=str, default='data/train/Flickr1024_patches_masked_fixed')
+    parser.add_argument('--tb_dir', type=str, default='tensorboard_log_Y/temp')
     return parser.parse_args()
 
 
@@ -24,6 +25,7 @@ def train(train_loader, cfg):
     net = PASSRnet(cfg.scale_factor).to(cfg.device)
     net.apply(weights_init_xavier)
     cudnn.benchmark = True
+    writer = SummaryWriter(log_dir=cfg.tb_dir)
 
     criterion_mse = torch.nn.MSELoss().to(cfg.device)
     criterion_L1 = L1Loss()
@@ -46,6 +48,9 @@ def train(train_loader, cfg):
 
             ### loss_SR
             loss_SR = criterion_mse(SR_left, HR_left)
+            loss = loss_SR
+
+            ''' ONLY loss_SR 
 
             ### loss_smoothness
             loss_h = criterion_L1(M_right_to_left[:, :-1, :, :], M_right_to_left[:, 1:, :, :]) + \
@@ -69,7 +74,9 @@ def train(train_loader, cfg):
                           criterion_L1(LR_right * V_right_to_left, LR_left_warped * V_right_to_left)
 
             ### losses
-            loss = loss_SR + 0.005 * (loss_photo + loss_smooth + loss_cycle)
+            loss = loss_SR + 0.005 * (loss_photo + loss_smooth + loss_cycle) 
+
+            ONLY loss_SR '''
 
             optimizer.zero_grad()
             loss.backward()
@@ -80,7 +87,9 @@ def train(train_loader, cfg):
 
         if idx_epoch % 1 == 0:
             loss_list.append(float(np.array(loss_epoch).mean()))
+            writer.add_scalar('Epoch/Loss', loss_list[-1], idx_epoch)
             psnr_list.append(float(np.array(psnr_epoch).mean()))
+            writer.add_scalar('Epoch/PSNR', psnr_list[-1], idx_epoch)
             print('Epoch----%5d, loss---%f, PSNR---%f' % (idx_epoch + 1, float(np.array(loss_epoch).mean()), float(np.array(psnr_epoch).mean())))
 
             save_ckpt({
@@ -88,9 +97,11 @@ def train(train_loader, cfg):
                 'state_dict': net.state_dict(),
                 'loss': loss_list,
                 'psnr': psnr_list,
-            }, save_path = 'log/x' + str(cfg.scale_factor) + '/', filename='PASSRnet_x' + str(cfg.scale_factor) + '_epoch' + str(idx_epoch + 1) + '.pth.tar')
+            }, save_path = 'log/', filename='PASSRnet' + '_epoch' + str(idx_epoch + 1) + '_fixed_mse.pth.tar')
             psnr_epoch = []
             loss_epoch = []
+
+    writer.close()
 
 def main(cfg):
     train_set = TrainSetLoader(dataset_dir=cfg.trainset_dir, cfg=cfg)

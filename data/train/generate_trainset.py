@@ -6,8 +6,8 @@ from glob import glob
 import cv2
 
 # Settings
-mask_mode = 'irregular'  # 'fixed', 'random_rect', 'irregular'
-image_dir = 'data/train/Flicker1024/'
+mask_mode = 'fixed'  # 'fixed', 'random_rect', 'irregular'
+image_dir = 'data/train/Flickr1024/'
 output_dir = 'data/train/Flickr1024_patches_masked_' + mask_mode + '/'
 patch_h, patch_w = 30*4, 90*4  # HR patch size
 stride = 20*4

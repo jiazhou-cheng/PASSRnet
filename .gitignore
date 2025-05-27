@@ -1,2 +1,19 @@
-data/train/Flicker1024
 data/train/Flickr1024_patches_masked_irregular
+data/train/Flickr1024_patches_masked_irregular copy
+data/test/Flickr1024_patches_masked_fixed_test
+data/train/Flickr1024_patches_masked_irregular_1
+data/test/Flickr1024_patches_masked_irregular_test
+data/test/KITTI2012
+data/test/KITTI2012/original
+data/test/KITTI2012_patches_masked_fixed
+data/train/Flickr1024
+data/train/Flickr1024_patches_masked_fixed
+data/train/Flickr1024_patches_masked_fixed_half
+data/test/KITTI2012/original
+
+log
+log_x
+results
+results/Flickr1024_patches_masked_irregular_test
+
+results_x results_x/Flickr1024_patches_masked_irregular_test tensorboard_log_X tensorboard_log_Y

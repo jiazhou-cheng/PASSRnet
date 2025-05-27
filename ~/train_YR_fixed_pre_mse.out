@@ -1,0 +1,3 @@
+Loading pretrained model from log/fixed_mask/PASSRnet_epoch25.pth.tar
+Epoch----    1, loss---0.052731, PSNR---13.609453
+Epoch----    2, loss---0.036350, PSNR---14.548539
