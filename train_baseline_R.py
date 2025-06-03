@@ -39,45 +39,22 @@ def train(train_loader, cfg):
 
     for idx_epoch in range(cfg.n_epochs):
         scheduler.step()
-        for idx_iter, (HR_left, _, LR_left, LR_right) in tqdm(enumerate(train_loader), total=len(train_loader), desc=f"Epoch {idx_epoch+1}"):
-            b, c, h, w = LR_left.shape
-            HR_left, LR_left, LR_right  = Variable(HR_left).to(cfg.device), Variable(LR_left).to(cfg.device), Variable(LR_right).to(cfg.device)
+        for idx_iter, (_, HR_right, _, LR_right) in tqdm(enumerate(train_loader), total=len(train_loader), desc=f"Epoch {idx_epoch+1}"):
+            b, c, h, w = LR_right.shape
+            HR_right, LR_right  = Variable(HR_right).to(cfg.device), Variable(LR_right).to(cfg.device)
 
-            SR_left, (M_right_to_left, M_left_to_right), (M_left_right_left, M_right_left_right), \
-            (V_left_to_right, V_right_to_left) = net(LR_left, LR_right, is_training=1)
+            SR_right, (M_right_to_left, M_left_to_right), (M_left_right_left, M_right_left_right), \
+            (V_left_to_right, V_right_to_left) = net(LR_right, LR_right, is_training=1)
 
             ### loss_SR
-            loss_SR = criterion_mse(SR_left, HR_left)
-
-            ### loss_smoothness
-            loss_h = criterion_L1(M_right_to_left[:, :-1, :, :], M_right_to_left[:, 1:, :, :]) + \
-                     criterion_L1(M_left_to_right[:, :-1, :, :], M_left_to_right[:, 1:, :, :])
-            loss_w = criterion_L1(M_right_to_left[:, :, :-1, :-1], M_right_to_left[:, :, 1:, 1:]) + \
-                     criterion_L1(M_left_to_right[:, :, :-1, :-1], M_left_to_right[:, :, 1:, 1:])
-            loss_smooth = loss_w + loss_h
-
-            ### loss_cycle
-            Identity = Variable(torch.eye(w, w).repeat(b, h, 1, 1), requires_grad=False).to(cfg.device)
-            loss_cycle = criterion_L1(M_left_right_left * V_left_to_right.permute(0, 2, 1, 3), Identity * V_left_to_right.permute(0, 2, 1, 3)) + \
-                         criterion_L1(M_right_left_right * V_right_to_left.permute(0, 2, 1, 3), Identity * V_right_to_left.permute(0, 2, 1, 3))
-
-            ### loss_photometric
-            LR_right_warped = torch.bmm(M_right_to_left.contiguous().view(b*h,w,w), LR_right.permute(0,2,3,1).contiguous().view(b*h, w, c))
-            LR_right_warped = LR_right_warped.view(b, h, w, c).contiguous().permute(0, 3, 1, 2)
-            LR_left_warped = torch.bmm(M_left_to_right.contiguous().view(b * h, w, w), LR_left.permute(0, 2, 3, 1).contiguous().view(b * h, w, c))
-            LR_left_warped = LR_left_warped.view(b, h, w, c).contiguous().permute(0, 3, 1, 2)
-
-            loss_photo = criterion_L1(LR_left * V_left_to_right, LR_right_warped * V_left_to_right) + \
-                          criterion_L1(LR_right * V_right_to_left, LR_left_warped * V_right_to_left)
-
-            ### losses
-            loss = loss_SR + 0.005 * (loss_photo + loss_smooth + loss_cycle) 
+            loss_SR = criterion_mse(SR_right, HR_right)
+            loss = loss_SR
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
-            psnr_epoch.append(cal_psnr(HR_left[:,:,:,64:].data.cpu(), SR_left[:,:,:,64:].data.cpu()))
+            psnr_epoch.append(cal_psnr(HR_right[:,:,:,64:].data.cpu(), SR_right[:,:,:,64:].data.cpu()))
             loss_epoch.append(loss.data.cpu())
 
         if idx_epoch % 1 == 0:
@@ -92,7 +69,7 @@ def train(train_loader, cfg):
                 'state_dict': net.state_dict(),
                 'loss': loss_list,
                 'psnr': psnr_list,
-            }, save_path = 'log/', filename='PASSRnet' + '_epoch' + str(idx_epoch + 1) + '_fixed_mse.pth.tar')
+            }, save_path = 'log_onlyR/', filename='PASSRnet' + '_epoch' + str(idx_epoch + 1) + '_fixed_mse.pth.tar')
             psnr_epoch = []
             loss_epoch = []
 
@@ -106,4 +83,3 @@ def main(cfg):
 if __name__ == '__main__':
     cfg = parse_args()
     main(cfg)
-
